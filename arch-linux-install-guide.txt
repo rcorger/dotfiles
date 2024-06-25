@@ -38,15 +38,17 @@
 
 // installing the kernel
 12) > pacstrap -K /mnt base base-devel linux linux-firmware vim networkmanager grub efibootmgr
-13) > genfstab -U /mnt >> /mnt/etc/fstab
+	* if you're doing an encrypted installation also add these packages:
+			cryptsetup lvm2 
+13) > genfstab -U /mnt >> /mnt/etc/fstab	// omit this if you are doing an encryption
 	> cat /mnt/etc/fstab // check if everything is fine and up to standard
 14) > arch-chroot /mnt // your colors should change because now you're in the install
 
 15) > systemctl enable NetworkManager // reorder the numbers here
 
 // configuring grub
-17) > grub-install /dev/sda --force
-18) > grub-mkconfig -o /boot/grub/grub.cfg
+17) > grub-install /dev/sda --force  		// omit this part if you are doing an encryption
+18) > grub-mkconfig -o /boot/grub/grub.cfg	// this too
 
 19) > passwd // set your new root password
 	* type in your password
@@ -230,11 +232,6 @@ Go into your ~/.bashrc file and write:
 
 ... create your efi boot folder and map it...
 ... continue with your arch installation as you would normally.
-
-// WHEN RUNNING PACSTRAP
-DONT FORGET TO ADD THESE PACKAGES: 
-	cryptsetup lvm2 
-
 
 // DECRYPTION OF DRIVE ON BOOT (in chroot)
 
