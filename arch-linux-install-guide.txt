@@ -1,0 +1,262 @@
+# Corger's simple guide to installing Arch
+	(mainly for personal use)
+
+1) > ping google.org // to check for internet
+	* if you're receiving back packets then you're good to continue
+2) > timedatectl set-ntp true
+3) > lsblk  // show all disks
+	// or alternatively find out which disk u want to install on
+   > lsblk -o NAME,MODEL,SIZE -d
+
+4) > cfdisk /dev/your_disk
+	* choose gpt
+	* new 128M-512M partition for boot     // boot partition
+	* new 4-8G partition for swap 	       // swap partition
+	* new 20-40G partition for root dir   // root partition
+	* new partition with rest of space     // home partition
+	* select write at the bottom
+   	** // run lsblk again to confirm everything was written correctly.
+
+// Formatting all of the partitions
+5) > mkfs.fat -F 32 /dev/sda1  // boot 
+   > mkfs.ext4 (/dev/sda3)     // root
+   > mkfs.ext4 /dev/sda4       // home partition
+
+// Creating directories on which partitions will be mounted
+6) > mount /dev/sda3 /mnt   // required mount
+   > mkdir -p /mnt/boot/efi
+   > mkdir /mnt/home
+
+// Mounting
+7) > mount /dev/sda4 /mnt/home // home partition
+8) > mount /dev/sda1 /mnt/boot/efi
+
+// Swap Memory
+9) > mkswap /dev/sda2   // swap
+   > swapon /dev/sda2   // swap
+11) > lsblk // to check everything is mounted and swap memory works
+
+// installing the kernel
+12) > pacstrap -K /mnt base base-devel linux linux-firmware vim networkmanager grub efibootmgr
+13) > genfstab -U /mnt >> /mnt/etc/fstab
+	> cat /mnt/etc/fstab // check if everything is fine and up to standard
+14) > arch-chroot /mnt // your colors should change because now you're in the install
+
+15) > systemctl enable NetworkManager // reorder the numbers here
+
+// configuring grub
+17) > grub-install /dev/sda --force
+18) > grub-mkconfig -o /boot/grub/grub.cfg
+
+19) > passwd // set your new root password
+	* type in your password
+
+// generate locales + keymaps
+20) > vim /etc/locale.gen
+	choose your language in my case en_US:
+		* uncomment en_US.UTF-8 
+					en_US ISO-8859
+    > vim /etc/vconsole.conf
+		*write in your keymap for eg: KEYMAP=us
+		
+21) > locale-gen
+22) > echo "PC-NAME" > /etc/hostname // PC-NAME obviously being yours.
+
+// time management
+23) > ln -sf /usr/share/zoneinfo/Eire /etc/localtime
+	* probably like that if you can't find it then press tab...
+    > hwclock --systohc // sync bios clock
+
+24) > exit // exits out of the chroot
+25) > umount -R /mnt
+26) > reboot
+
+// once rebooted, arch linux will ask you to login
+27) > uname: root; passwd: password you set
+
+// setting up user accounts:
+28) > pacman -S sudo // likely installed already
+29) > useradd -m -G wheel -s /bin/bash yourusernamehere
+30) > passwd yourusernamehere
+	* set your password
+
+// AS ROOT
+31) > EDITOR=vim visudo // edit sudoers file
+		* Uncomment the line that says "%wheel ALL=(ALL) ALL"
+	> pacman -S doas // setting up doas (optional)
+		> vi /etc/doas.conf
+			* Write: permit yourusernamehere as root
+
+
+// recommended optional: perform su and test sudo command
+32) > exit // to exit out of root and re-login as your new user
+	> login: yourusernamehere passwd: yourpassword
+33) > sudo pacman -Syu  // confirm you are allowed to use sudo
+
+
+// amd gpu drivers download
+34) > sudo pacman -S libva-mesa-driver mesa xf86-video-amdgpu vulkan-radeon
+
+// i3 window manager installation
+35) sudo pacman -S gnome-terminal i3-wm dmenu i3status xorg-xinit xorg
+36) vim ~/.xinitrc
+	* write in "exec i3"
+37) startx // starts the manager
+37) vim ~/.config/i3/config
+	* configure your settings, keybinds, and terminal etc.
+	* set xterm -fa 'Monospace' -fs 14 -bg black -fg grey
+38) vim ~/.config/i3status/config
+	* configure your status bar
+(for good i3 config file do > git clone https://github.com/rcorger/config-files2
+
+
+// hyprland window compositor (really just a window manager) installation
+35) sudo pacman -S hyprland thunar konsole hyprpaper
+
+
+// KDE GRAPHICAL ENVIRONMENT DOWNLOAD
+35) sudo pacman -S plasma ly konsole dolphin
+	* press enter for every option
+36) sudo systemctl enable --now ly // this is my personal preferred DM
+
+
+// ly is so much fuckin cooler omg im bouttacum
+
+// GNOME GRAPHICAL ENVIRONMENT DOWNLOAD
+35) sudo pacman -S xorg xorg-server
+36) sudo pacman -S gnome gnome-terminal dolphin htop // terminal download so you don't have to enter tty lol
+37) sudo systemctl enable gdm.service
+38) sudo systemctl start gdm.service --now
+39) sudo shutdown -r now // just to confirm everything works
+
+
+// MOST IMPORTANT PART OBVIOUSLY
+40) sudo pacman -S fastfetch
+41) fastfetch
+42) PROFIT ON r/unixporn and flex on non-arch users!!!
+
+//
+// WIFI MANAGEMENT
+//
+
+// wifi-menu // post install because you need an internet connection to install...
+> sudo pacman -S netctl dialog
+> sudo wifi-menu
+	* choose your wifi device
+	* type in the password...
+
+// iwctl (pre-install)
+> iwctl
+> device list // will prolly get like wlan0
+> station wlan0 scan
+> station wlan0 get-networks
+> station wlan0 connect YOURSSID
+	* password will be requested.
+> exit // to get out of the tool
+
+// nmcli (post-install wifi)
+> nmcli dev status
+> nmcli radio wifi on
+> nmcli dev wifi list
+> sudo nmcli dev wifi connect "network-ssid" password "network-password"
+
+
+// post install: yay installation
+1) > sudo (or doas) pacman -S --needed base-devel git
+2) > git clone https://aur.archlinux.org/yay.git
+3) > cd yay
+4) > makepkg -si // -s -> installs dependencies; -i -> installs the pkg 
+
+
+// HOW CAN I ENTER BACK INTO TTY???
+from gnome:
+	KEYBIND: Ctrl+Alt+F4 <---- usually works for all
+from i3:
+	KEYBIND: $mod+shift+e
+	
+
+// set up doas (sudo alternative)
+> sudo pacman -S doas
+> sudo vim /etc/doas.conf
+	* write in:	
+		permit UNAME as root
+
+// jetbrains font downloads
+> sudo pacman -S ttf-jetbrains-mono ttf-jetbrains-mono-nerd
+
+// file manager
+> sudo pacman -S nemo
+
+// one thing you may realise is that you are unable to install steam.
+> sudo vim /etc/pacman.conf
+	* uncomment [multilib] in /etc/
+
+// easy hyprland obs fix:
+Go into your ~/.bashrc file and write:
+	export QT_QPA_PLATFORM=wayland
+
+
+// GUIDE TO INSTALLATION OF LUKS ENCRYPTED ARCH LINUX
+
+... parition and set up all of your drives using AND DONT MAKE /home/ part.
+	> cfdisk /dev/sdx
+
+// take note of the partition on which arch will go unto.
+
+> cryptsetup luksFormat /dev/sdxx
+	// sdxx obviously being your root partition.
+	* enter a passphrase that you will remember.
+
+> lsblk
+	// to make sure it was set up.
+
+> cryptsetup open /dev/sdxx yourtitle
+	// this will open up your encrypted drive so that you are able to install arch.
+
+> lsblk 
+	// output would be something like
+	/dev/sdx
+	|
+	|----/dev/sdx1
+	|
+	|----/dev/sdx2
+		|
+		|----yourtitle
+
+
+// now we want to create a file system for that encrypted partition
+> mkfs.btrfs /dev/mapper/yourtitle
+> mount /dev/mapper/yourtitle /mnt
+
+... create your efi boot folder and map it...
+... continue with your arch installation as you would normally.
+
+// WHEN RUNNING PACSTRAP
+DONT FORGET TO ADD THESE PACKAGES: 
+	cryptsetup lvm2 
+
+
+// DECRYPTION OF DRIVE ON BOOT (in chroot)
+
+> vim /etc/mkinitcpio.conf
+	* in the line that says "HOOKS=()" scroll to just after the word
+		"block" and write "encrypt lvm2"
+> mkinitcpio -p linux // to restart modules
+
+// GRUB CONFIGURATION -> exit out of arch-chroot
+> exit
+
+> lsblk -f >> /mnt/etc/default/grub // this is so you can have uuids of drives later
+> genfstab -U /mnt > /mnt/etc/fstab
+
+> arch-chroot /mnt
+
+> vim /etc/default/grub
+	* yank the lines which contain the actual root partition and the decrypted parition
+	* put it toward the top and comment it out.
+	* inside of the GRUB_CMDLINE_LINUX_DEFAULT line add to the string after 'quiet':
+		cryptdevice=UUID=uuidOfYourEncryptedPartition:cryptdrive root=UUID=uuidOfDecryptedMappedPartition
+
+> grub-install /dev/sdx
+> grub-mkconfig -o /boot/grub/grub.cfg
+	// /etc/default/grub should have changed now.
