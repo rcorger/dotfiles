@@ -257,3 +257,5 @@ Go into your ~/.bashrc file and write:
 > grub-install /dev/sdx
 > grub-mkconfig -o /boot/grub/grub.cfg
 	// /etc/default/grub should have changed now.
+
+also get pipewire and pavucontrol if using hyprland
